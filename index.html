@@ -29,7 +29,7 @@ nav{display:flex;gap:28px;font-size:13px;color:#333}nav a:hover{color:var(--acce
 .search{border:1px solid #ddd;border-radius:8px;padding:12px 14px;width:240px;font-size:13px}
 .products{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
 .product{border:1px solid #eee;border-radius:22px;padding:16px;background:#fff;min-width:0;overflow:hidden}
-.product:hover{box-shadow:0 12px 30px #0000000b}
+.product:hover{box-shadow:0 12px 30px #0000000b}.product-link{display:block;color:inherit;text-decoration:none}
 .product-photo{height:250px;background:#f4f4f6;border-radius:16px;display:block;overflow:hidden;margin-bottom:16px}
 .product-photo img{display:block;width:100%;height:100%;max-width:100%;object-fit:contain;object-position:center;background:#f4f4f6}
 .pill{font-size:10px;letter-spacing:1px;font-weight:700;color:#888;text-transform:uppercase}
@@ -88,7 +88,7 @@ function renderProducts(items){
  if(!items.length){productsEl.innerHTML='<p class="section-sub">Nenhum aparelho disponível no momento. Consulte nossa equipe pelo WhatsApp.</p>';return}
  productsEl.innerHTML=items.map(p=>{
   const image=p.image_url?'<img src="'+safe(p.image_url)+'" alt="'+safe(p.model)+'" loading="lazy">':'📱';
-  return '<article class="product" data-name="'+safe((p.model+' '+p.category).toLowerCase())+'"><div class="product-photo">'+image+'</div><div class="pill">'+safe(p.category)+'</div><h3>'+safe(p.model)+'</h3><p class="spec">Consulte cores e disponibilidade</p><div class="price">'+(Number(p.sale_price)>0?money(p.sale_price):'Consulte o valor')+'</div><div class="availability">Disponível para consulta</div><a class="product-buy" href="#contato">Comprar</a></article>';
+  return '<a class="product product-link" href="produto.html?id='+encodeURIComponent(p.id)+'" data-name="'+safe((p.model+' '+p.category).toLowerCase())+'"><div class="product-photo">'+image+'</div><div class="pill">'+safe(p.category)+'</div><h3>'+safe(p.model)+'</h3><p class="spec">Consulte cores e disponibilidade</p><div class="price">'+(Number(p.sale_price)>0?money(p.sale_price):'Consulte o valor')+'</div><div class="availability">Disponível para consulta</div><span class="product-buy">Ver produto</span></a>';
  }).join('');
 }
 async function loadCatalog(){
