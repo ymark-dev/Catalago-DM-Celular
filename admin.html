@@ -104,11 +104,12 @@ $('extractAI').onclick=async()=>{
  if(texto.length<5){$('message').textContent='Cole primeiro a lista do fornecedor.';return}
  const btn=$('extractAI');btn.disabled=true;btn.textContent='Interpretando...';$('message').textContent='A IA está analisando a lista. Aguarde...';
  try{
-  const response=await fetch(SUPABASE_URL+'/functions/v1/interpretar-lista-iphone',{
+  const response=await fetch(SUPABASE_URL+'/functions/v1/dynamic-api',{
    method:'POST',
    headers:{
     'Content-Type':'application/json',
-    'apikey':SUPABASE_PUBLISHABLE_KEY
+    'apikey':SUPABASE_PUBLISHABLE_KEY,
+    'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY
    },
    body:JSON.stringify({texto})
   });
