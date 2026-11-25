@@ -59,9 +59,9 @@ const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'B
 function markup(cost){const v=Number($('profitValue').value)||0;return $('profitMode').value==='percent'?cost*(1+v/100):cost+v}
 function categoryFor(s){return /seminovo|usado|bateria|vitrine/i.test(s)?'iPhone seminovo':/xiaomi|redmi|samsung|motorola|poco|realme|android|galaxy/i.test(s)?'Android':'iPhone lacrado'}
 function parsePrice(s){
- let t=s.replace(/\s/g,'');
- let m=t.match(/(?:R\$)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$)?\d+(?:,\d{2})?/i);
- if(!m)return null;let raw=m[0].replace(/^R\$/i,'').replace(/\./g,'').replace(',','.');let n=Number(raw);return Number.isFinite(n)&&n>100?n:null;
+ const currency=s.match(/R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:,\d{2})?)/i);
+ let raw=currency?currency[1]:((s.match(/\d{1,3}(?:\.\d{3})+(?:,\d{2})?|\d+(?:,\d{2})?/g)||[]).pop());
+ if(!raw)return null;raw=raw.replace(/\./g,'').replace(',','.');const n=Number(raw);return Number.isFinite(n)&&n>100?n:null;
 }
 function parseLines(text){
  const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),out=[];
