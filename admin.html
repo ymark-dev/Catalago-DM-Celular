@@ -36,7 +36,7 @@ button{border:0;border-radius:6px;padding:12px 16px;cursor:pointer;font-weight:b
 iPhone 13 128GB - R$ 1.850
 iPhone 14 128GB - R$ 2.250
 iPhone 15 Pro 256GB - R$ 4.100"></textarea>
-<div class="row"><button class="primary" id="extract">Extrair produtos</button><button class="light" id="clearText">Limpar texto</button></div><div class="hint">Dica: uma linha por aparelho e preço facilita a leitura. Confira os valores extraídos antes de salvar.</div><div class="status" id="message"></div>
+<div class="row"><button class="primary" id="extract">Extrair produtos</button><button class="gold" id="extractAI">Interpretar com IA</button><button class="light" id="clearText">Limpar texto</button></div><div class="hint">Dica: uma linha por aparelho e preço facilita a leitura. Confira os valores extraídos antes de salvar.</div><div class="status" id="message"></div>
 </section>
 <section class="card" id="lucro">
 <h2>2. Configurar lucro</h2><p class="desc">Escolha como acrescentar o lucro sobre o custo de compra.</p>
@@ -55,6 +55,8 @@ iPhone 15 Pro 256GB - R$ 4.100"></textarea>
 </div>
 <script>
 const $=id=>document.getElementById(id);let products=[];
+const SUPABASE_URL='https://ybydwbhxxdenorlkkmfr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_t55geti4lBuRjWnqVa8tOw_P9VUKp49';
 const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function markup(cost){const v=Number($('profitValue').value)||0;return $('profitMode').value==='percent'?cost*(1+v/100):cost+v}
 function categoryFor(s){return /\bCPO\b/i.test(s)?'iPhone CPO':/seminovo|usado|bateria|vitrine/i.test(s)?'iPhone seminovo':'iPhone lacrado'}
@@ -97,6 +99,33 @@ function render(){
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('extract').onclick=()=>{const found=parseLines($('source').value);if(!found.length){$('message').textContent='Não encontrei linhas com preço. Tente colar uma linha por aparelho, por exemplo: iPhone 14 128GB - R$ 2.250';return}products=products.concat(found);$('message').textContent=found.length+' produto(s) identificado(s). Revise os dados abaixo.';render()};
+$('extractAI').onclick=async()=>{
+ const texto=$('source').value.trim();
+ if(texto.length<5){$('message').textContent='Cole primeiro a lista do fornecedor.';return}
+ const btn=$('extractAI');btn.disabled=true;btn.textContent='Interpretando...';$('message').textContent='A IA está analisando a lista. Aguarde...';
+ try{
+  const response=await fetch(SUPABASE_URL+'/functions/v1/interpretar-lista-iphone',{
+   method:'POST',
+   headers:{
+    'Content-Type':'application/json',
+    'apikey':SUPABASE_PUBLISHABLE_KEY,
+    'Authorization':'Bearer '+SUPABASE_PUBLISHABLE_KEY
+   },
+   body:JSON.stringify({texto})
+  });
+  const data=await response.json();
+  if(!response.ok)throw new Error(data.error||'Falha ao chamar a função. Código '+response.status);
+  if(!Array.isArray(data.produtos))throw new Error('A resposta da IA veio em formato inesperado.');
+  const novos=data.produtos.map(p=>{
+   const detalhes=[p.armazenamento,p.tecnologia,p.cor].filter(Boolean).join(' • ');
+   return {id:Date.now()+Math.random(),model:[p.modelo,detalhes].filter(Boolean).join(' • '),cost:p.custo==null?0:Number(p.custo),category:p.categoria||'iPhone lacrado'};
+  });
+  products=products.concat(novos);render();
+  $('message').textContent=novos.length+' produto(s) interpretado(s) pela IA. Confira especialmente os itens com custo R$ 0,00.';
+ }catch(error){
+  $('message').textContent='Erro na IA: '+error.message+'. Confira a publicação e a configuração de acesso da Edge Function.';
+ }finally{btn.disabled=false;btn.textContent='Interpretar com IA'}
+};
 $('clearText').onclick=()=>{$('source').value='';$('message').textContent=''};
 $('profitMode').onchange=render;$('profitValue').oninput=render;
 $('rows').addEventListener('input',e=>{const el=e.target;if(el.dataset.i===undefined)return;const p=products[Number(el.dataset.i)];p[el.dataset.k]=el.dataset.k==='cost'?Number(el.value):el.value;render()});
