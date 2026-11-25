@@ -21,7 +21,7 @@ main{padding:26px 0 90px}.back{display:inline-block;color:#666;font-size:14px;ma
 .panel{border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:24px}
 .panel h2{font-size:20px;margin:0 0 18px}.field-label{font-size:12px;color:#777;text-transform:uppercase;letter-spacing:.6px;margin:18px 0 9px}
 .choice-row{display:flex;gap:8px;flex-wrap:wrap}.choice{border:1px solid #ddd;border-radius:9px;padding:12px 15px;font-size:13px;background:#fff;color:#333}
-.choice.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.choice.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}select.choice{width:100%;max-width:320px;cursor:pointer}
 .action{display:block;text-align:center;background:var(--ink);color:#fff;border-radius:8px;padding:17px 20px;font-size:15px;font-weight:700;margin-top:20px}
 .action:hover{background:#292929}.notice{font-size:12px;color:#888;line-height:1.5;margin-top:13px}
 .bottom-bar{display:none}
@@ -47,8 +47,8 @@ footer{background:#111;color:#aaa;padding:24px 0;font-size:11px}
   <p class="eyebrow" id="category"></p><h1 id="name"></h1>
   <div class="price" id="price"></div>
   <div id="variantControls" hidden>
-   <div class="field-label">Cor</div><select class="choice" id="colorSelect" aria-label="Escolha a cor"></select>
-   <div class="field-label">Memória</div><select class="choice" id="storageSelect" aria-label="Escolha a memória"></select>
+   <div id="colorField"><div class="field-label">Cor</div><select class="choice" id="colorSelect" aria-label="Escolha a cor"></select></div>
+   <div id="storageField"><div class="field-label">Memória</div><select class="choice" id="storageSelect" aria-label="Escolha a memória"></select></div>
   </div>
   <p class="muted" id="variantSummary"></p>
   <p class="muted">Consulte cores, armazenamento e disponibilidade com nossa equipe.</p>
@@ -119,8 +119,8 @@ async function load(){
   const colors=unique('color'),storages=unique('storage');
   if(colors.length||storages.length){
    $('variantControls').hidden=false;
-   $('colorSelect').parentElement.style.display=colors.length?'block':'none';
-   $('storageSelect').parentElement.style.display=storages.length?'block':'none';
+   $('colorField').style.display=colors.length?'block':'none';
+   $('storageField').style.display=storages.length?'block':'none';
    if(colors.length)fillSelect($('colorSelect'),colors,first.color||colors[0]);
    if(storages.length)fillSelect($('storageSelect'),storages,first.storage||storages[0]);
    $('colorSelect').addEventListener('change',onColorChange);
