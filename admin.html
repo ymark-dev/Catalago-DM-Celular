@@ -57,34 +57,34 @@ iPhone 15 Pro 256GB - R$ 4.100"></textarea>
 const $=id=>document.getElementById(id);let products=[];
 const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 function markup(cost){const v=Number($('profitValue').value)||0;return $('profitMode').value==='percent'?cost*(1+v/100):cost+v}
-function categoryFor(s){return /\\bCPO\\b/i.test(s)?'iPhone CPO':/seminovo|usado|bateria|vitrine/i.test(s)?'iPhone seminovo':'iPhone lacrado'}
+function categoryFor(s){return /\bCPO\b/i.test(s)?'iPhone CPO':/seminovo|usado|bateria|vitrine/i.test(s)?'iPhone seminovo':'iPhone lacrado'}
 function parsePrice(s){
- const m=s.match(/R\\$\\s*(\\d{1,3}(?:\\.\\d{3})*(?:,\\d{2})?|\\d+(?:,\\d{2})?)/i);
+ const m=s.match(/R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?|\d+(?:,\d{2})?)/i);
  if(!m)return null;
- const n=Number(m[1].replace(/\\./g,'').replace(',','.'));
+ const n=Number(m[1].replace(/\./g,'').replace(',','.'));
  return Number.isFinite(n)&&n>100?n:null;
 }
 function cleanText(s){
- return s.replace(/[\\p{Extended_Pictographic}\\uFE0F]/gu,' ').replace(/[•|]/g,' ').replace(/[ *_~]/g,' ').replace(/\\s+/g,' ').trim();
+ return s.replace(/[\p{Extended_Pictographic}\uFE0F]/gu,' ').replace(/[•|]/g,' ').replace(/[ *_~]/g,' ').replace(/\s+/g,' ').trim();
 }
 function parseLines(text){
- const lines=text.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean),out=[];
+ const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),out=[];
  let currentHeader='',currentCategory='iPhone lacrado';
  for(const raw of lines){
-  const line=raw.trim();
-  if(/\\bIPHONE\\b/i.test(cleanText(line))&&!/\\bIPHONES\\b/i.test(cleanText(line))){
-   currentHeader=cleanText(line).replace(/R\\$.*$/i,'').replace(/[-–—:]+$/,'').trim();
+  const line=raw.trim(),clean=cleanText(line);
+  if(/\bIPHONE\b/i.test(clean)&&!/\bIPHONES\b/i.test(clean)){
+   currentHeader=clean.replace(/R\$.*$/i,'').replace(/[-–—:]+$/,'').trim();
    currentCategory=categoryFor(currentHeader);
    continue;
   }
   if(!currentHeader)continue;
-  if(/R\\$\\s*❌|R\\s*❌|💰\\s*❌/i.test(line)||/❌/.test(line))continue;
+  if(/❌/.test(line))continue;
   const cost=parsePrice(line);
   if(!cost)continue;
-  let color=cleanText(line.replace(/R\\$\\s*\\d[\\d.,]*/i,'').replace(/💰/g,'').replace(/[-–—:]+/g,' ').trim());
-  color=color.replace(/^(R\\$|💰)+/i,'').trim();
+  let color=cleanText(line.replace(/R\$\s*\d[\d.,]*/i,'').replace(/💰/g,'').replace(/[-–—:]+/g,' ').trim());
+  color=color.replace(/^(R\$|💰)+/i,'').trim();
   if(!color)color='Cor não informada';
-  const model=(currentHeader+' • '+color).replace(/\\s+/g,' ').trim();
+  const model=(currentHeader+' • '+color).replace(/\s+/g,' ').trim();
   out.push({id:Date.now()+Math.random(),model,cost,category:currentCategory});
  }
  return out;
