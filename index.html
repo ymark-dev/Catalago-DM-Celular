@@ -54,18 +54,36 @@ footer{background:#111;color:#aaa;padding:23px 0;font-size:11px}.foot{display:fl
  </section>
  <section id="catalogo">
   <div class="catalog-head"><div><h2 class="section-title">Destaques do catálogo</h2><p class="section-sub">Conheça alguns exemplos de como os aparelhos serão apresentados.</p></div><input class="search" id="search" type="search" placeholder="Buscar aparelho..." aria-label="Buscar aparelho"></div>
-  <div class="products" id="products">
-   <article class="product" data-name="iphone lacrado"><div class="product-photo">📱</div><div class="pill">iPhone lacrado</div><h3>iPhone — modelo</h3><p class="spec">Armazenamento · Cor</p><div class="price">Consulte o valor</div><div class="availability">Exemplo de produto</div></article>
-   <article class="product" data-name="iphone seminovo"><div class="product-photo">📱</div><div class="pill">iPhone seminovo</div><h3>iPhone — modelo</h3><p class="spec">Armazenamento · Saúde da bateria</p><div class="price">Consulte o valor</div><div class="availability">Exemplo de produto</div></article>
-   <article class="product" data-name="android smartphone"><div class="product-photo">📱</div><div class="pill">Android</div><h3>Smartphone — modelo</h3><p class="spec">Armazenamento · Cor</p><div class="price">Consulte o valor</div><div class="availability">Exemplo de produto</div></article>
-   <article class="product" data-name="novidade smartphone"><div class="product-photo">✨</div><div class="pill">Novidades</div><h3>Novos aparelhos</h3><p class="spec">Confira as opções disponíveis</p><div class="price">Consulte o valor</div><div class="availability">Exemplo de produto</div></article>
-  </div>
+  <div class="products" id="products"><p class="section-sub">Carregando aparelhos disponíveis...</p></div>
  </section>
  <section class="contact" id="contato"><div><h2>Vamos encontrar o aparelho ideal?</h2><p>Chame nossa equipe para consultar modelos, cores, valores e disponibilidade.</p></div><a class="btn" href="https://wa.me/" target="_blank" rel="noopener">CONSULTAR NO WHATSAPP ↗</a></section>
 </main>
 <footer><div class="wrap foot"><span>© 2026 DM Celular. Todos os direitos reservados.</span><span><a href="admin.html" style="color:#aaa;text-decoration:none;margin-right:14px">Área administrativa</a> Desenvolvido por <strong>YMARK Systems</strong></span></div></footer>
 <script>
+const SUPABASE_URL='https://ybydwbhxxdenorlkkmfr.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_t55geti4lBuRjWnqVa8tOw_P9VUKp49';
+const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const productsEl=document.getElementById('products');
+function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function renderProducts(items){
+ if(!items.length){productsEl.innerHTML='<p class="section-sub">Nenhum aparelho disponível no momento. Consulte nossa equipe pelo WhatsApp.</p>';return}
+ productsEl.innerHTML=items.map(p=>{
+  const image=p.image_url?'<img src="'+safe(p.image_url)+'" alt="'+safe(p.model)+'" loading="lazy" style="width:100%;height:100%;object-fit:contain">':'📱';
+  return '<article class="product" data-name="'+safe((p.model+' '+p.category).toLowerCase())+'"><div class="product-photo">'+image+'</div><div class="pill">'+safe(p.category)+'</div><h3>'+safe(p.model)+'</h3><p class="spec">Consulte cores e disponibilidade</p><div class="price">'+money(p.sale_price)+'</div><div class="availability">Disponível para consulta</div></article>';
+ }).join('');
+}
+async function loadCatalog(){
+ try{
+  const response=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,sale_price,image_url,created_at&active=eq.true&order=created_at.desc',{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}});
+  if(!response.ok)throw new Error(await response.text());
+  renderProducts(await response.json());
+ }catch(error){
+  productsEl.innerHTML='<p class="section-sub">Não foi possível carregar os aparelhos agora. Entre em contato com nossa equipe.</p>';
+  console.error('Erro ao carregar catálogo:',error);
+ }
+}
 document.getElementById('search').addEventListener('input',function(){const q=this.value.toLowerCase().trim();document.querySelectorAll('.product').forEach(card=>{card.style.display=card.dataset.name.includes(q)||card.innerText.toLowerCase().includes(q)?'':'none'})});
+loadCatalog();
 </script>
 </body>
 </html>
