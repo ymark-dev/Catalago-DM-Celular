@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DM Celular | Administração</title>
+<style>
+:root{--bg:#f5f5f5;--ink:#171717;--muted:#777;--line:#e8e8e8;--gold:#efb64e;--dark:#151515;--green:#23845b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}button,input,select,textarea{font:inherit}.layout{min-height:100vh;display:grid;grid-template-columns:230px 1fr}
+aside{background:var(--dark);color:white;padding:26px 18px}.logo{font-size:22px;font-weight:900;margin:4px 10px 34px}.logo small{display:block;color:var(--gold);font-size:10px;letter-spacing:3px;margin-top:5px}
+.menu a{display:block;color:#ccc;text-decoration:none;padding:13px 12px;border-radius:7px;font-size:13px;margin:4px 0}.menu a.active,.menu a:hover{background:#2c2c2c;color:white}.menu a.active{border-left:3px solid var(--gold)}
+main{padding:30px;max-width:1400px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:26px}.top h1{font-size:27px;margin:0}.top p{color:var(--muted);font-size:13px;margin:7px 0 0}.back{color:#333;font-size:13px;text-decoration:none;border:1px solid #ddd;border-radius:6px;padding:10px 13px;background:white}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}.card{background:white;border:1px solid var(--line);border-radius:11px;padding:22px;margin-bottom:18px}.card h2{font-size:17px;margin:0 0 7px}.desc{font-size:12px;color:var(--muted);line-height:1.5;margin:0 0 17px}
+textarea{width:100%;min-height:190px;resize:vertical;border:1px solid #ddd;border-radius:7px;padding:13px;font-size:13px;line-height:1.5;outline-color:var(--gold)}.hint{font-size:11px;color:#888;margin:8px 0 0}
+button{border:0;border-radius:6px;padding:12px 16px;cursor:pointer;font-weight:bold;font-size:12px}.primary{background:var(--dark);color:white}.gold{background:var(--gold);color:#171717}.light{background:#f1f1f1;color:#333}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row button{margin-top:12px}
+.field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:11px;color:#666;font-weight:bold;text-transform:uppercase;letter-spacing:.5px}.field input,.field select{border:1px solid #ddd;border-radius:6px;padding:11px 12px;background:white;min-width:0;width:100%}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.profit-preview{background:#faf7f0;border:1px solid #f1e2c7;padding:14px;border-radius:8px;font-size:12px;color:#66502b;line-height:1.6}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:white;border:1px solid var(--line);padding:16px;border-radius:9px}.stat span{display:block;color:#888;font-size:11px}.stat strong{display:block;font-size:22px;margin-top:6px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th{text-align:left;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.6px;padding:12px 9px;border-bottom:1px solid var(--line)}td{padding:11px 9px;border-bottom:1px solid #f0f0f0;font-size:12px}td input,td select{width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:12px}.money{font-weight:bold;white-space:nowrap}.remove{background:#fff0f0;color:#a33;padding:8px 10px}
+.notice{padding:12px 14px;background:#fff7e8;border:1px solid #f1dfbd;color:#77551d;border-radius:7px;font-size:11px;line-height:1.5;margin-top:15px}
+.status{font-size:12px;color:var(--green);min-height:16px;margin-top:10px}
+@media(max-width:900px){.layout{grid-template-columns:1fr}aside{padding:13px 16px}.logo{margin:0 8px 10px}.menu{display:flex;overflow:auto}.menu a{white-space:nowrap}.grid{grid-template-columns:1fr}main{padding:20px 14px}.top h1{font-size:23px}}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.split{grid-template-columns:1fr}.card{padding:16px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="layout">
+<aside><div class="logo">DM CELULAR<small>PAINEL ADMINISTRATIVO</small></div><nav class="menu"><a class="active" href="#importar">Importar produtos</a><a href="#lucro">Configurar lucro</a><a href="#lista">Produtos extraídos</a><a href="../">Ver catálogo ↗</a></nav></aside>
+<main>
+<div class="top"><div><h1>Gestão do catálogo</h1><p>Importe a lista do fornecedor, revise os custos e calcule os preços de venda.</p></div><a class="back" href="./">← Ver catálogo</a></div>
+<div class="stats"><div class="stat"><span>Produtos extraídos</span><strong id="count">0</strong></div><div class="stat"><span>Margem configurada</span><strong id="profitLabel">25%</strong></div><div class="stat"><span>Valor de venda estimado</span><strong id="total">R$ 0,00</strong></div></div>
+<div class="grid">
+<section class="card" id="importar">
+<h2>1. Colar mensagem do fornecedor</h2><p class="desc">Copie a mensagem recebida no WhatsApp e cole aqui. O painel tentará identificar modelo, memória e custo em cada linha.</p>
+<textarea id="source" placeholder="Exemplo:
+*IPHONES DISPONÍVEIS*
+iPhone 13 128GB - R$ 1.850
+iPhone 14 128GB - R$ 2.250
+iPhone 15 Pro 256GB - R$ 4.100"></textarea>
+<div class="row"><button class="primary" id="extract">Extrair produtos</button><button class="light" id="clearText">Limpar texto</button></div><div class="hint">Dica: uma linha por aparelho e preço facilita a leitura. Confira os valores extraídos antes de salvar.</div><div class="status" id="message"></div>
+</section>
+<section class="card" id="lucro">
+<h2>2. Configurar lucro</h2><p class="desc">Escolha como acrescentar o lucro sobre o custo de compra.</p>
+<div class="field"><label for="profitMode">Tipo de acréscimo</label><select id="profitMode"><option value="percent">Porcentagem sobre o custo (%)</option><option value="fixed">Valor fixo por aparelho (R$)</option></select></div>
+<div class="field"><label for="profitValue">Lucro a acrescentar</label><input id="profitValue" type="number" min="0" step="0.01" value="25"></div>
+<div class="profit-preview" id="preview">Exemplo: custo de R$ 2.000,00 + 25% = preço de venda de R$ 2.500,00.</div>
+<div class="notice"><strong>Privacidade:</strong> os custos e o lucro são informações internas. Esta primeira versão é um protótipo visual; os dados ficam salvos somente neste navegador. Ainda não há login seguro nem banco de dados compartilhado.</div>
+</section>
+</div>
+<section class="card" id="lista">
+<h2>3. Conferir produtos extraídos</h2><p class="desc">Revise ou corrija os nomes, categorias e custos. O preço sugerido é recalculado automaticamente.</p>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Categoria</th><th>Custo fornecedor</th><th>Preço sugerido</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5" style="color:#888;text-align:center;padding:25px">Cole uma lista do fornecedor e clique em “Extrair produtos”.</td></tr></tbody></table></div>
+<div class="row"><button class="gold" id="save">Salvar rascunho neste navegador</button><button class="light" id="export">Baixar lista CSV</button></div><div class="status" id="saveStatus"></div>
+</section>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);let products=[];
+const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+function markup(cost){const v=Number($('profitValue').value)||0;return $('profitMode').value==='percent'?cost*(1+v/100):cost+v}
+function categoryFor(s){return /seminovo|usado|bateria|vitrine/i.test(s)?'iPhone seminovo':/xiaomi|redmi|samsung|motorola|poco|realme|android|galaxy/i.test(s)?'Android':'iPhone lacrado'}
+function parsePrice(s){
+ let t=s.replace(/\s/g,'');
+ let m=t.match(/(?:R\$)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$)?\d+(?:,\d{2})?/i);
+ if(!m)return null;let raw=m[0].replace(/^R\$/i,'').replace(/\./g,'').replace(',','.');let n=Number(raw);return Number.isFinite(n)&&n>100?n:null;
+}
+function parseLines(text){
+ const lines=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),out=[];
+ for(const line of lines){
+  const cost=parsePrice(line);if(!cost)continue;
+  let model=line.replace(/R\$?\s*\d[\d.,]*/ig,'').replace(/[•|]/g,' ').replace(/[ *_~]/g,' ').replace(/\s+/g,' ').trim();
+  model=model.replace(/[-–—,:]+$/,'').trim();if(!model||model.length<3)continue;
+  if(/^(total|subtotal|pix|dinheiro|cart[aã]o|frete|entrega|valor|pre[cç]o)/i.test(model))continue;
+  out.push({id:Date.now()+Math.random(),model,cost,category:categoryFor(model)});
+ }
+ return out;
+}
+function render(){
+ $('count').textContent=products.length;$('profitLabel').textContent=$('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value);
+ $('total').textContent=money(products.reduce((s,p)=>s+markup(p.cost),0));
+ $('preview').textContent='Exemplo: custo de R$ 2.000,00 + '+($('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value))+' = preço sugerido de '+money(markup(2000))+'.';
+ $('rows').innerHTML=products.length?products.map((p,i)=>'<tr><td><input aria-label="Modelo" data-i="'+i+'" data-k="model" value="'+esc(p.model)+'"></td><td><select data-i="'+i+'" data-k="category"><option '+(p.category==='iPhone lacrado'?'selected':'')+'>iPhone lacrado</option><option '+(p.category==='iPhone seminovo'?'selected':'')+'>iPhone seminovo</option><option '+(p.category==='Android'?'selected':'')+'>Android</option></select></td><td><input aria-label="Custo" data-i="'+i+'" data-k="cost" type="number" min="0" step=".01" value="'+p.cost+'"></td><td class="money">'+money(markup(p.cost))+'</td><td><button class="remove" data-remove="'+i+'">Excluir</button></td></tr>').join(''):'<tr><td colspan="5" style="color:#888;text-align:center;padding:25px">Nenhum produto extraído ainda.</td></tr>';
+}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$('extract').onclick=()=>{const found=parseLines($('source').value);if(!found.length){$('message').textContent='Não encontrei linhas com preço. Tente colar uma linha por aparelho, por exemplo: iPhone 14 128GB - R$ 2.250';return}products=products.concat(found);$('message').textContent=found.length+' produto(s) identificado(s). Revise os dados abaixo.';render()};
+$('clearText').onclick=()=>{$('source').value='';$('message').textContent=''};
+$('profitMode').onchange=render;$('profitValue').oninput=render;
+$('rows').addEventListener('input',e=>{const el=e.target;if(el.dataset.i===undefined)return;const p=products[Number(el.dataset.i)];p[el.dataset.k]=el.dataset.k==='cost'?Number(el.value):el.value;render()});
+$('rows').addEventListener('change',e=>{const el=e.target;if(el.dataset.i===undefined)return;products[Number(el.dataset.i)][el.dataset.k]=el.dataset.k==='cost'?Number(el.value):el.value;render()});
+$('rows').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){products.splice(Number(e.target.dataset.remove),1);render()}});
+$('save').onclick=()=>{localStorage.setItem('dm-admin-draft',JSON.stringify({products,mode:$('profitMode').value,value:$('profitValue').value}));$('saveStatus').textContent='Rascunho salvo neste navegador.'};
+$('export').onclick=()=>{const lines=[['Modelo','Categoria','Custo','Preco sugerido'],...products.map(p=>[p.model,p.category,p.cost,markup(p.cost).toFixed(2)])];const csv='\uFEFF'+lines.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='rascunho-catalogo-dm.csv';a.click();URL.revokeObjectURL(a.href)};
+try{const d=JSON.parse(localStorage.getItem('dm-admin-draft'));if(d){products=d.products||[];$('profitMode').value=d.mode||'percent';$('profitValue').value=d.value||25}}catch{}render();
+</script>
+</body></html>
