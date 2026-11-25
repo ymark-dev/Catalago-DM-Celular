@@ -86,18 +86,27 @@ const productsEl=document.getElementById('products');
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function renderProducts(items){
  if(!items.length){productsEl.innerHTML='<p class="section-sub">Nenhum aparelho disponível no momento. Consulte nossa equipe pelo WhatsApp.</p>';return}
- productsEl.innerHTML=items.map(p=>{
-  const image=p.image_url?'<img src="'+safe(p.image_url)+'" alt="'+safe(p.model)+'" loading="lazy">':'📱';
-  return '<a class="product product-link" href="produto.html?id='+encodeURIComponent(p.id)+'" data-name="'+safe((p.model+' '+p.category).toLowerCase())+'"><div class="product-photo">'+image+'</div><div class="pill">'+safe(p.category)+'</div><h3>'+safe(p.model)+'</h3><p class="spec">Consulte cores e disponibilidade</p><div class="price">'+(Number(p.sale_price)>0?money(p.sale_price):'Consulte o valor')+'</div><div class="availability">Disponível para consulta</div><span class="product-buy">Ver produto</span></a>';
+ const groups=new Map();
+ items.forEach(p=>{
+  const key=(p.model||'').trim().toLocaleLowerCase('pt-BR')+'|'+(p.category||'');
+  if(!groups.has(key))groups.set(key,{model:p.model,category:p.category,variants:[]});
+  groups.get(key).variants.push(p);
+ });
+ productsEl.innerHTML=[...groups.values()].map(g=>{
+  const sorted=g.variants.slice().sort((a,b)=>(Number(a.sale_price)||Infinity)-(Number(b.sale_price)||Infinity));
+  const p=sorted[0],image=p.image_url?'<img src="'+safe(p.image_url)+'" alt="'+safe(g.model)+'" loading="lazy">':'📱';
+  const prices=sorted.map(v=>Number(v.sale_price)).filter(n=>n>0);
+  const price=prices.length?'A partir de '+money(Math.min(...prices)):'Consulte o valor';
+  return '<a class="product product-link" href="produto.html?model='+encodeURIComponent(g.model)+'" data-name="'+safe((g.model+' '+g.category).toLowerCase())+'"><div class="product-photo">'+image+'</div><div class="pill">'+safe(g.category)+'</div><h3>'+safe(g.model)+'</h3><p class="spec">'+g.variants.length+' opção(ões) de cor e memória</p><div class="price">'+price+'</div><div class="availability">Escolha a versão desejada</div><span class="product-buy">Ver opções</span></a>';
  }).join('');
 }
 async function loadCatalog(){
  try{
-  const response=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,sale_price,image_url,created_at&active=eq.true&order=created_at.desc',{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}});
+  const response=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,storage,color,sale_price,image_url,created_at&active=eq.true&order=created_at.desc',{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}});
   if(!response.ok)throw new Error(await response.text());
   renderProducts(await response.json());
  }catch(error){
-  productsEl.innerHTML='<p class="section-sub">Não foi possível carregar os aparelhos agora. Entre em contato com nossa equipe.</p>';
+  productsEl.innerHTML='<p class="section-sub">Não foi possível carregar os aparelhos agora. Confira a conexão do catálogo.</p>';
   console.error('Erro ao carregar catálogo:',error);
  }
 }
