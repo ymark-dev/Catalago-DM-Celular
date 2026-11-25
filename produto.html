@@ -21,7 +21,17 @@ main{padding:26px 0 90px}.back{display:inline-block;color:#666;font-size:14px;ma
 .panel{border:1px solid var(--line);border-radius:16px;padding:22px;margin-top:24px}
 .panel h2{font-size:20px;margin:0 0 18px}.field-label{font-size:12px;color:#777;text-transform:uppercase;letter-spacing:.6px;margin:18px 0 9px}
 .choice-row{display:flex;gap:8px;flex-wrap:wrap}.choice{border:1px solid #ddd;border-radius:9px;padding:12px 15px;font-size:13px;background:#fff;color:#333}
-.choice.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}select.choice{width:100%;max-width:320px;cursor:pointer}
+.choice.active{border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.color-options,.storage-options{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.color-swatch{width:48px;height:48px;border-radius:50%;border:2px solid #ddd;padding:4px;background:#fff;cursor:pointer;display:grid;place-items:center}
+.color-swatch span{width:100%;height:100%;border-radius:50%;display:block;border:1px solid #00000018}
+.color-swatch.active{border:2px solid var(--gold);box-shadow:0 0 0 2px #f4b64f55}
+.color-swatch:focus-visible,.storage-option:focus-visible{outline:3px solid #f4b64f;outline-offset:3px}
+.storage-option{min-width:92px;border:1px solid #ddd;border-radius:12px;background:#fff;padding:16px 20px;font-size:16px;font-weight:600;cursor:pointer;color:var(--ink)}
+.storage-option.active{border:2px solid var(--gold);padding:15px 19px}
+.storage-option:disabled{opacity:.35;cursor:not-allowed;text-decoration:line-through}
+.variant-caption{font-size:14px;margin:0 0 10px;color:#333}
+@media(max-width:700px){.color-swatch{width:50px;height:50px}.storage-option{min-width:calc(33.33% - 9px);padding:15px 12px}}
 .action{display:block;text-align:center;background:var(--ink);color:#fff;border-radius:8px;padding:17px 20px;font-size:15px;font-weight:700;margin-top:20px}
 .action:hover{background:#292929}.notice{font-size:12px;color:#888;line-height:1.5;margin-top:13px}
 .bottom-bar{display:none}
@@ -47,8 +57,8 @@ footer{background:#111;color:#aaa;padding:24px 0;font-size:11px}
   <p class="eyebrow" id="category"></p><h1 id="name"></h1>
   <div class="price" id="price"></div>
   <div id="variantControls" hidden>
-   <div id="colorField"><div class="field-label">Cor</div><select class="choice" id="colorSelect" aria-label="Escolha a cor"></select></div>
-   <div id="storageField"><div class="field-label">Memória</div><select class="choice" id="storageSelect" aria-label="Escolha a memória"></select></div>
+   <div id="colorField"><div class="field-label">Cor: <strong id="selectedColorName"></strong></div><div class="color-options" id="colorOptions" role="group" aria-label="Escolha a cor"></div></div>
+   <div id="storageField"><div class="field-label">Armazenamento</div><div class="storage-options" id="storageOptions" role="group" aria-label="Escolha a memória"></div></div>
   </div>
   <p class="muted" id="variantSummary"></p>
   <p class="muted">Consulte cores, armazenamento e disponibilidade com nossa equipe.</p>
@@ -72,36 +82,49 @@ footer{background:#111;color:#aaa;padding:24px 0;font-size:11px}
 const SUPABASE_URL='https://ybydwbhxxdenorlkkmfr.supabase.co';
 const SUPABASE_KEY='sb_publishable_t55geti4lBuRjWnqVa8tOw_P9VUKp49';
 const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-let variants=[],selected=null;
+let variants=[],selected=null,chosenColor='',chosenStorage='';
 const $=id=>document.getElementById(id);
+const colorMap={'preto':'#292929','black':'#292929','azul':'#b8d1df','azul-claro':'#b8d1df','branco':'#f1f1ef','branco-estelar':'#f1f1ef','prata':'#dedede','natural':'#c9bda9','titânio natural':'#c9bda9','dourado':'#d8bd83','rosa':'#e8c4cc','lavanda':'#cfc4e6','roxo':'#8975a9','verde':'#9eb9a6','vermelho':'#9d3444','vinho':'#6c2638','laranja':'#e98a45'};
 function unique(field){return [...new Set(variants.map(v=>(v[field]||'').trim()).filter(Boolean))]}
-function fillSelect(el,values,current){el.innerHTML=values.map(v=>'<option value="'+v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" '+(v===current?'selected':'')+'>'+v+'</option>').join('');}
-function availableFor(field,otherValue){
- return [...new Set(variants.filter(v=>!otherValue||(v[field==='color'?'storage':'color']||'')===otherValue).map(v=>(v[field]||'').trim()).filter(Boolean))];
+function swatchColor(name){const key=name.toLocaleLowerCase('pt-BR');return colorMap[key]||'#c9c9c9'}
+function findVariant(){
+ return variants.find(v=>(v.color||'')===chosenColor&&(v.storage||'')===chosenStorage)
+ ||variants.find(v=>(v.color||'')===chosenColor&&(!chosenStorage||(v.storage||'')===chosenStorage))
+ ||variants.find(v=>(v.storage||'')===chosenStorage&&(!chosenColor||(v.color||'')===chosenColor))
+ ||variants[0];
+}
+function renderColorOptions(){
+ const colors=unique('color');
+ $('colorOptions').innerHTML=colors.map(c=>'<button type="button" class="color-swatch '+(c===chosenColor?'active':'')+'" data-color="'+c.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" aria-label="'+c+'" title="'+c+'" aria-pressed="'+(c===chosenColor)+'"><span style="background:'+swatchColor(c)+'"></span></button>').join('');
+ $('selectedColorName').textContent=chosenColor||'';
+}
+function renderStorageOptions(){
+ const storages=unique('storage').filter(s=>!chosenColor||variants.some(v=>(v.color||'')===chosenColor&&(v.storage||'')===s));
+ $('storageOptions').innerHTML=storages.map(s=>'<button type="button" class="storage-option '+(s===chosenStorage?'active':'')+'" data-storage="'+s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" aria-pressed="'+(s===chosenStorage)+'">'+s+'</button>').join('');
 }
 function updateVariant(){
- const color=$('colorSelect').value,storage=$('storageSelect').value;
- selected=variants.find(v=>(v.color||'')===color&&(v.storage||'')===storage)||variants.find(v=>(v.color||'')===color)||variants[0];
- if(!selected)return;
+ selected=findVariant();if(!selected)return;
+ chosenColor=selected.color||chosenColor;chosenStorage=selected.storage||chosenStorage;
  const price=Number(selected.sale_price)>0?money(selected.sale_price):'Consulte o valor';
  $('price').textContent=price;$('bottomPrice').textContent=price;
  $('variantSummary').textContent=[selected.color,selected.storage].filter(Boolean).join(' • ');
  const img=$('image');
  if(selected.image_url){img.src=selected.image_url;img.alt=selected.model+' '+(selected.color||'')}else{img.removeAttribute('src');img.alt='Foto não cadastrada'}
  const msg=encodeURIComponent('Olá! Tenho interesse no '+selected.model+(selected.storage?' • '+selected.storage:'')+(selected.color?' • '+selected.color:'')+'. Poderia confirmar preço e disponibilidade?');
- const wa='https://wa.me/?text='+msg;
- $('whatsapp').href=wa;$('bottomCta').href=wa;
+ const wa='https://wa.me/?text='+msg;$('whatsapp').href=wa;$('bottomCta').href=wa;
+ renderColorOptions();renderStorageOptions();
 }
-function onColorChange(){
- const colors=availableFor('color',$('storageSelect').value);
- if(!colors.includes($('colorSelect').value))fillSelect($('colorSelect'),colors,colors[0]);
+$('colorOptions').addEventListener('click',e=>{
+ const b=e.target.closest('[data-color]');if(!b)return;
+ chosenColor=b.dataset.color;
+ const valid=variants.filter(v=>(v.color||'')===chosenColor);
+ if(!valid.some(v=>(v.storage||'')===chosenStorage))chosenStorage=valid[0]?.storage||'';
  updateVariant();
-}
-function onStorageChange(){
- const storages=availableFor('storage',$('colorSelect').value);
- if(!storages.includes($('storageSelect').value))fillSelect($('storageSelect'),storages,storages[0]);
- updateVariant();
-}
+});
+$('storageOptions').addEventListener('click',e=>{
+ const b=e.target.closest('[data-storage]');if(!b)return;
+ chosenStorage=b.dataset.storage;updateVariant();
+});
 async function load(){
  const model=new URLSearchParams(location.search).get('model');
  if(!model){$('state').textContent='Produto não informado.';return}
@@ -111,23 +134,13 @@ async function load(){
   if(!r.ok)throw new Error(await r.text());
   variants=await r.json();
   if(!variants.length){$('state').textContent='Este aparelho não está disponível no catálogo.';return}
-  const first=variants[0];
-  document.title=first.model+' | DM Celular';
-  $('state').hidden=true;$('detail').hidden=false;
-  $('category').textContent=first.category||'Smartphone';
-  $('name').textContent=first.model;
-  const colors=unique('color'),storages=unique('storage');
-  if(colors.length||storages.length){
-   $('variantControls').hidden=false;
-   $('colorField').style.display=colors.length?'block':'none';
-   $('storageField').style.display=storages.length?'block':'none';
-   if(colors.length)fillSelect($('colorSelect'),colors,first.color||colors[0]);
-   if(storages.length)fillSelect($('storageSelect'),storages,first.storage||storages[0]);
-   $('colorSelect').addEventListener('change',onColorChange);
-   $('storageSelect').addEventListener('change',onStorageChange);
-  }
-  updateVariant();
-  $('bottom').hidden=false;
+  const first=variants[0];document.title=first.model+' | DM Celular';
+  $('state').hidden=true;$('detail').hidden=false;$('category').textContent=first.category||'Smartphone';$('name').textContent=first.model;
+  chosenColor=first.color||'';chosenStorage=first.storage||'';
+  $('variantControls').hidden=false;
+  $('colorField').style.display=unique('color').length?'block':'none';
+  $('storageField').style.display=unique('storage').length?'block':'none';
+  updateVariant();$('bottom').hidden=false;
  }catch(e){$('state').textContent='Não foi possível carregar as opções. Verifique se as colunas de cor e memória foram criadas no Supabase.';console.error(e)}
 }
 load();
