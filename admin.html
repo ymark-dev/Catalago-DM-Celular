@@ -48,7 +48,7 @@ iPhone 15 Pro 256GB - R$ 4.100"></textarea>
 </div>
 <section class="card" id="lista">
 <h2>3. Conferir produtos extraídos</h2><p class="desc">Revise ou corrija os nomes, categorias e custos. O preço sugerido é recalculado automaticamente.</p>
-<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Categoria</th><th>Custo fornecedor</th><th>Preço sugerido</th><th>Foto do aparelho</th><th>Publicar</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Cole uma lista do fornecedor e clique em “Extrair produtos”.</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Memória</th><th>Cor / tecnologia</th><th>Categoria</th><th>Custo fornecedor</th><th>Preço sugerido</th><th>Foto do aparelho</th><th>Publicar</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Cole uma lista do fornecedor e clique em “Extrair produtos”.</td></tr></tbody></table></div>
 <div class="row"><button class="gold" id="save">Salvar rascunho neste navegador</button><button class="light" id="export">Baixar lista CSV</button></div><div class="status" id="saveStatus"></div>
 </section>
 <section class="card" id="gerenciar">
@@ -91,8 +91,10 @@ function parseLines(text){
   let color=cleanText(line.replace(/R\$\s*\d[\d.,]*/i,'').replace(/💰/g,'').replace(/[-–—:]+/g,' ').trim());
   color=color.replace(/^(R\$|💰)+/i,'').trim();
   if(!color)color='Cor não informada';
-  const model=(currentHeader+' • '+color).replace(/\s+/g,' ').trim();
-  out.push({id:Date.now()+Math.random(),model,cost,category:currentCategory});
+  const storageMatch=(currentHeader+' '+line).match(/\b(\d+\s?(?:GB|TB))\b/i);
+  const storage=storageMatch?storageMatch[1].replace(/\s+/g,'').toUpperCase():'';
+  const model=currentHeader.replace(/\b\d+\s?(?:GB|TB)\b/ig,'').trim();
+  out.push({id:Date.now()+Math.random(),model,storage,color,cost,category:currentCategory});
  }
  return out;
 }
@@ -100,7 +102,7 @@ function render(){
  $('count').textContent=products.length;$('profitLabel').textContent=$('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value);
  $('total').textContent=money(products.reduce((s,p)=>s+markup(p.cost),0));
  $('preview').textContent='Exemplo: custo de R$ 2.000,00 + '+($('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value))+' = preço sugerido de '+money(markup(2000))+'.';
- $('rows').innerHTML=products.length?products.map((p,i)=>'<tr><td><input aria-label="Modelo" data-i="'+i+'" data-k="model" value="'+esc(p.model)+'"></td><td><select data-i="'+i+'" data-k="category"><option '+(p.category==='iPhone lacrado'?'selected':'')+'>iPhone lacrado</option><option '+(p.category==='iPhone seminovo'?'selected':'')+'>iPhone seminovo</option><option '+(p.category==='iPhone CPO'?'selected':'')+'>iPhone CPO</option><option '+(p.category==='Android'?'selected':'')+'>Android</option></select></td><td><input aria-label="Custo" data-i="'+i+'" data-k="cost" type="number" min="0" step=".01" value="'+p.cost+'"></td><td class="money">'+money(markup(p.cost))+'</td><td><input type="file" accept="image/*" data-photo="'+i+'"><small class="hint">'+(p.imageName||'Nenhuma foto selecionada')+'</small></td><td><button class="gold" data-publish="'+i+'">Publicar</button><div class="hint" id="pub-'+i+'"></div></td><td><button class="remove" data-remove="'+i+'">Excluir</button></td></tr>').join(''):'<tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Nenhum produto extraído ainda.</td></tr>';
+ $('rows').innerHTML=products.length?products.map((p,i)=>'<tr><td><input aria-label="Modelo" data-i="'+i+'" data-k="model" value="'+esc(p.model)+'"></td><td><input aria-label="Memória" data-i="'+i+'" data-k="storage" value="'+esc(p.storage||'')+'" placeholder="128GB"></td><td><input aria-label="Cor ou tecnologia" data-i="'+i+'" data-k="color" value="'+esc(p.color||'')+'" placeholder="Preto / E-SIM"></td><td><select data-i="'+i+'" data-k="category"><option '+(p.category==='iPhone lacrado'?'selected':'')+'>iPhone lacrado</option><option '+(p.category==='iPhone seminovo'?'selected':'')+'>iPhone seminovo</option><option '+(p.category==='iPhone CPO'?'selected':'')+'>iPhone CPO</option><option '+(p.category==='Android'?'selected':'')+'>Android</option></select></td><td><input aria-label="Custo" data-i="'+i+'" data-k="cost" type="number" min="0" step=".01" value="'+p.cost+'"></td><td class="money">'+money(markup(p.cost))+'</td><td><input type="file" accept="image/*" data-photo="'+i+'"><small class="hint">'+(p.imageName||'Nenhuma foto selecionada')+'</small></td><td><button class="gold" data-publish="'+i+'">Publicar</button><div class="hint" id="pub-'+i+'"></div></td><td><button class="remove" data-remove="'+i+'">Excluir</button></td></tr>').join(''):'<tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Nenhum produto extraído ainda.</td></tr>';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('extract').onclick=()=>{const found=parseLines($('source').value);if(!found.length){$('message').textContent='Não encontrei linhas com preço. Tente colar uma linha por aparelho, por exemplo: iPhone 14 128GB - R$ 2.250';return}products=products.concat(found);$('message').textContent=found.length+' produto(s) identificado(s). Revise os dados abaixo.';render()};
@@ -122,8 +124,7 @@ $('extractAI').onclick=async()=>{
   if(!response.ok)throw new Error(data.error||'Falha ao chamar a função. Código '+response.status);
   if(!Array.isArray(data.produtos))throw new Error('A resposta da IA veio em formato inesperado.');
   const novos=data.produtos.map(p=>{
-   const detalhes=[p.armazenamento,p.tecnologia,p.cor].filter(Boolean).join(' • ');
-   return {id:Date.now()+Math.random(),model:[p.modelo,detalhes].filter(Boolean).join(' • '),cost:p.custo==null?0:Number(p.custo),category:p.categoria||'iPhone lacrado'};
+   return {id:Date.now()+Math.random(),model:p.modelo||'',storage:p.armazenamento||'',color:[p.cor,p.tecnologia].filter(Boolean).join(' / '),cost:p.custo==null?0:Number(p.custo),category:p.categoria||'iPhone lacrado'};
   });
   products=products.concat(novos);render();
   $('message').textContent=novos.length+' produto(s) interpretado(s) pela IA. Confira especialmente os itens com custo R$ 0,00.';
@@ -152,7 +153,7 @@ async function publishProduct(i,button){
    if(!up.ok)throw new Error('Falha no envio da foto: '+(await up.text()));
    imageUrl=SUPABASE_URL+'/storage/v1/object/public/fotos-produtos/'+path;
   }
-  const payload={model:p.model,category:p.category,sale_price:Number(markup(p.cost).toFixed(2)),image_url:imageUrl,active:true};
+  const payload={model:p.model,storage:p.storage||null,color:p.color||null,category:p.category,sale_price:Number(markup(p.cost).toFixed(2)),image_url:imageUrl,active:true};
   const res=await fetch(SUPABASE_URL+'/rest/v1/catalog_products',{method:'POST',headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)});
   if(!res.ok)throw new Error('Falha ao salvar produto: '+(await res.text()));
   if(status)status.textContent='Publicado no catálogo!';
