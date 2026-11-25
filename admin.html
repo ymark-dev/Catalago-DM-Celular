@@ -55,7 +55,7 @@ iPhone 15 Pro 256GB - R$ 4.100"></textarea>
 <h2>4. Produtos publicados no catálogo</h2>
 <p class="desc">Consulte os produtos que já estão no site. Você pode alterar nome, categoria, preço, foto, ativar/desativar ou excluir um produto.</p>
 <div class="row"><button class="primary" id="refreshCatalog">Atualizar lista</button><span class="hint" id="catalogStatus">Carregue os produtos para começar.</span></div>
-<div class="table-wrap" style="margin-top:14px"><table style="min-width:1050px"><thead><tr><th>Produto</th><th>Categoria</th><th>Preço de venda</th><th>URL da foto</th><th>Visível</th><th>Ações</th></tr></thead><tbody id="catalogRows"><tr><td colspan="6" style="text-align:center;color:#888;padding:22px">Clique em “Atualizar lista”.</td></tr></tbody></table></div>
+<div class="table-wrap" style="margin-top:14px"><table style="min-width:1050px"><thead><tr><th>Modelo (grupo)</th><th>Memória</th><th>Cor</th><th>Categoria</th><th>Preço de venda</th><th>URL da foto</th><th>Visível</th><th>Ações</th></tr></thead><tbody id="catalogRows"><tr><td colspan="6" style="text-align:center;color:#888;padding:22px">Clique em “Atualizar lista”.</td></tr></tbody></table></div>
 </section></main>
 </div>
 <script>
@@ -164,10 +164,10 @@ async function loadManagedProducts(){
  const status=$('catalogStatus'),body=$('catalogRows');
  status.textContent='Carregando...';
  try{
-  const r=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,sale_price,image_url,active,created_at&order=created_at.desc',{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}});
+  const r=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,storage,color,category,sale_price,image_url,active,created_at&order=created_at.desc',{headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY}});
   if(!r.ok)throw new Error(await r.text());
   const items=await r.json();
-  body.innerHTML=items.length?items.map(p=>'<tr data-id="'+esc(p.id)+'"><td><input data-field="model" value="'+esc(p.model||'')+'"></td><td><select data-field="category">'+['iPhone lacrado','iPhone seminovo','iPhone CPO','Android'].map(x=>'<option '+(p.category===x?'selected':'')+'>'+x+'</option>').join('')+'</select></td><td><input data-field="sale_price" type="number" min="0" step=".01" value="'+Number(p.sale_price||0)+'"></td><td><input data-field="image_url" value="'+esc(p.image_url||'')+'" placeholder="URL pública da foto"></td><td><select data-field="active"><option value="true" '+(p.active?'selected':'')+'>Sim</option><option value="false" '+(!p.active?'selected':'')+'>Não</option></select></td><td><div class="row" style="flex-wrap:nowrap"><button class="gold" data-save-product>Salvar</button><button class="remove" data-delete-product>Excluir</button></div></td></tr>').join(''):'<tr><td colspan="6" style="text-align:center;color:#888;padding:22px">Nenhum produto cadastrado.</td></tr>';
+  body.innerHTML=items.length?items.map(p=>'<tr data-id="'+esc(p.id)+'"><td><input style="min-width:220px" data-field="model" value="'+esc(p.model||'')+'"></td><td><input style="width:90px" data-field="storage" value="'+esc(p.storage||'')+'" placeholder="128GB"></td><td><input style="min-width:140px" data-field="color" value="'+esc(p.color||'')+'" placeholder="Preto"></td><td><select data-field="category">'+['iPhone lacrado','iPhone seminovo','iPhone CPO','Android'].map(x=>'<option '+(p.category===x?'selected':'')+'>'+x+'</option>').join('')+'</select></td><td><input data-field="sale_price" type="number" min="0" step=".01" value="'+Number(p.sale_price||0)+'"></td><td><input data-field="image_url" value="'+esc(p.image_url||'')+'" placeholder="URL pública da foto"></td><td><select data-field="active"><option value="true" '+(p.active?'selected':'')+'>Sim</option><option value="false" '+(!p.active?'selected':'')+'>Não</option></select></td><td><div class="row" style="flex-wrap:nowrap"><button class="gold" data-save-product>Salvar</button><button class="remove" data-delete-product>Excluir</button></div></td></tr>').join(''):'<tr><td colspan="8" style="text-align:center;color:#888;padding:22px">Nenhum produto cadastrado.</td></tr>';
   status.textContent=items.length+' produto(s) encontrado(s).';
  }catch(e){status.textContent='Erro ao carregar: '+e.message}
 }
