@@ -15,7 +15,7 @@ button{border:0;border-radius:6px;padding:12px 16px;cursor:pointer;font-weight:b
 .field{display:flex;flex-direction:column;gap:7px;margin-bottom:14px}.field label{font-size:11px;color:#666;font-weight:bold;text-transform:uppercase;letter-spacing:.5px}.field input,.field select{border:1px solid #ddd;border-radius:6px;padding:11px 12px;background:white;min-width:0;width:100%}
 .split{display:grid;grid-template-columns:1fr 1fr;gap:12px}.profit-preview{background:#faf7f0;border:1px solid #f1e2c7;padding:14px;border-radius:8px;font-size:12px;color:#66502b;line-height:1.6}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.stat{background:white;border:1px solid var(--line);padding:16px;border-radius:9px}.stat span{display:block;color:#888;font-size:11px}.stat strong{display:block;font-size:22px;margin-top:6px}
-.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:760px}th{text-align:left;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.6px;padding:12px 9px;border-bottom:1px solid var(--line)}td{padding:11px 9px;border-bottom:1px solid #f0f0f0;font-size:12px}td input,td select{width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:12px}.money{font-weight:bold;white-space:nowrap}.remove{background:#fff0f0;color:#a33;padding:8px 10px}
+.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:980px}th{text-align:left;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.6px;padding:12px 9px;border-bottom:1px solid var(--line)}td{padding:11px 9px;border-bottom:1px solid #f0f0f0;font-size:12px}td input,td select{width:100%;padding:8px;border:1px solid #ddd;border-radius:5px;font-size:12px}.money{font-weight:bold;white-space:nowrap}.remove{background:#fff0f0;color:#a33;padding:8px 10px}
 .notice{padding:12px 14px;background:#fff7e8;border:1px solid #f1dfbd;color:#77551d;border-radius:7px;font-size:11px;line-height:1.5;margin-top:15px}
 .status{font-size:12px;color:var(--green);min-height:16px;margin-top:10px}
 @media(max-width:900px){.layout{grid-template-columns:1fr}aside{padding:13px 16px}.logo{margin:0 8px 10px}.menu{display:flex;overflow:auto}.menu a{white-space:nowrap}.grid{grid-template-columns:1fr}main{padding:20px 14px}.top h1{font-size:23px}}
@@ -43,18 +43,18 @@ iPhone 15 Pro 256GB - R$ 4.100"></textarea>
 <div class="field"><label for="profitMode">Tipo de acréscimo</label><select id="profitMode"><option value="percent">Porcentagem sobre o custo (%)</option><option value="fixed">Valor fixo por aparelho (R$)</option></select></div>
 <div class="field"><label for="profitValue">Lucro a acrescentar</label><input id="profitValue" type="number" min="0" step="0.01" value="25"></div>
 <div class="profit-preview" id="preview">Exemplo: custo de R$ 2.000,00 + 25% = preço de venda de R$ 2.500,00.</div>
-<div class="notice"><strong>Privacidade:</strong> os custos e o lucro são informações internas. Esta primeira versão é um protótipo visual; os dados ficam salvos somente neste navegador. Ainda não há login seguro nem banco de dados compartilhado.</div>
+<div class="notice"><strong>Privacidade:</strong> o custo de compra fica somente no painel e não é enviado ao catálogo. Esta versão de testes ainda usa permissões temporárias; não compartilhe o endereço do painel antes de configurarmos o acesso seguro.</div>
 </section>
 </div>
 <section class="card" id="lista">
 <h2>3. Conferir produtos extraídos</h2><p class="desc">Revise ou corrija os nomes, categorias e custos. O preço sugerido é recalculado automaticamente.</p>
-<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Categoria</th><th>Custo fornecedor</th><th>Preço sugerido</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="5" style="color:#888;text-align:center;padding:25px">Cole uma lista do fornecedor e clique em “Extrair produtos”.</td></tr></tbody></table></div>
+<div class="table-wrap"><table><thead><tr><th>Modelo</th><th>Categoria</th><th>Custo fornecedor</th><th>Preço sugerido</th><th>Foto do aparelho</th><th>Publicar</th><th></th></tr></thead><tbody id="rows"><tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Cole uma lista do fornecedor e clique em “Extrair produtos”.</td></tr></tbody></table></div>
 <div class="row"><button class="gold" id="save">Salvar rascunho neste navegador</button><button class="light" id="export">Baixar lista CSV</button></div><div class="status" id="saveStatus"></div>
 </section>
 </main>
 </div>
 <script>
-const $=id=>document.getElementById(id);let products=[];
+const $=id=>document.getElementById(id);let products=[];const selectedPhotos=new Map();
 const SUPABASE_URL='https://ybydwbhxxdenorlkkmfr.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_t55geti4lBuRjWnqVa8tOw_P9VUKp49';
 const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
@@ -95,7 +95,7 @@ function render(){
  $('count').textContent=products.length;$('profitLabel').textContent=$('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value);
  $('total').textContent=money(products.reduce((s,p)=>s+markup(p.cost),0));
  $('preview').textContent='Exemplo: custo de R$ 2.000,00 + '+($('profitMode').value==='percent'?($('profitValue').value||0)+'%':money($('profitValue').value))+' = preço sugerido de '+money(markup(2000))+'.';
- $('rows').innerHTML=products.length?products.map((p,i)=>'<tr><td><input aria-label="Modelo" data-i="'+i+'" data-k="model" value="'+esc(p.model)+'"></td><td><select data-i="'+i+'" data-k="category"><option '+(p.category==='iPhone lacrado'?'selected':'')+'>iPhone lacrado</option><option '+(p.category==='iPhone seminovo'?'selected':'')+'>iPhone seminovo</option><option '+(p.category==='iPhone CPO'?'selected':'')+'>iPhone CPO</option><option '+(p.category==='Android'?'selected':'')+'>Android</option></select></td><td><input aria-label="Custo" data-i="'+i+'" data-k="cost" type="number" min="0" step=".01" value="'+p.cost+'"></td><td class="money">'+money(markup(p.cost))+'</td><td><button class="remove" data-remove="'+i+'">Excluir</button></td></tr>').join(''):'<tr><td colspan="5" style="color:#888;text-align:center;padding:25px">Nenhum produto extraído ainda.</td></tr>';
+ $('rows').innerHTML=products.length?products.map((p,i)=>'<tr><td><input aria-label="Modelo" data-i="'+i+'" data-k="model" value="'+esc(p.model)+'"></td><td><select data-i="'+i+'" data-k="category"><option '+(p.category==='iPhone lacrado'?'selected':'')+'>iPhone lacrado</option><option '+(p.category==='iPhone seminovo'?'selected':'')+'>iPhone seminovo</option><option '+(p.category==='iPhone CPO'?'selected':'')+'>iPhone CPO</option><option '+(p.category==='Android'?'selected':'')+'>Android</option></select></td><td><input aria-label="Custo" data-i="'+i+'" data-k="cost" type="number" min="0" step=".01" value="'+p.cost+'"></td><td class="money">'+money(markup(p.cost))+'</td><td><button class="remove" data-remove="'+i+'">Excluir</button></td></tr>').join(''):'<tr><td colspan="7" style="color:#888;text-align:center;padding:25px">Nenhum produto extraído ainda.</td></tr>';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 $('extract').onclick=()=>{const found=parseLines($('source').value);if(!found.length){$('message').textContent='Não encontrei linhas com preço. Tente colar uma linha por aparelho, por exemplo: iPhone 14 128GB - R$ 2.250';return}products=products.concat(found);$('message').textContent=found.length+' produto(s) identificado(s). Revise os dados abaixo.';render()};
@@ -130,7 +130,30 @@ $('clearText').onclick=()=>{$('source').value='';$('message').textContent=''};
 $('profitMode').onchange=render;$('profitValue').oninput=render;
 $('rows').addEventListener('input',e=>{const el=e.target;if(el.dataset.i===undefined)return;const p=products[Number(el.dataset.i)];p[el.dataset.k]=el.dataset.k==='cost'?Number(el.value):el.value;render()});
 $('rows').addEventListener('change',e=>{const el=e.target;if(el.dataset.i===undefined)return;products[Number(el.dataset.i)][el.dataset.k]=el.dataset.k==='cost'?Number(el.value):el.value;render()});
-$('rows').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){products.splice(Number(e.target.dataset.remove),1);render()}});
+$('rows').addEventListener('change',e=>{if(e.target.dataset.photo!==undefined){const i=Number(e.target.dataset.photo),file=e.target.files[0];if(file){selectedPhotos.set(i,file);products[i].imageName=file.name;render()}}});
+$('rows').addEventListener('click',e=>{if(e.target.dataset.remove!==undefined){products.splice(Number(e.target.dataset.remove),1);selectedPhotos.clear();render()}if(e.target.dataset.publish!==undefined)publishProduct(Number(e.target.dataset.publish),e.target)});
+async function publishProduct(i,button){
+ const p=products[i],status=$('pub-'+i),file=selectedPhotos.get(i);
+ if(!p.model.trim()){alert('Informe o modelo do aparelho.');return}
+ if(markup(p.cost)<=0){alert('O preço de venda precisa ser maior que zero.');return}
+ button.disabled=true;button.textContent='Enviando...';if(status)status.textContent='Preparando publicação...';
+ try{
+  let imageUrl=null;
+  if(file){
+   const folder=p.model.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'outros';
+   const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
+   const path=folder+'/'+Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+   const up=await fetch(SUPABASE_URL+'/storage/v1/object/fotos-produtos/'+path,{method:'POST',headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':file.type||'image/jpeg','x-upsert':'false'},body:file});
+   if(!up.ok)throw new Error('Falha no envio da foto: '+(await up.text()));
+   imageUrl=SUPABASE_URL+'/storage/v1/object/public/fotos-produtos/'+path;
+  }
+  const payload={model:p.model,category:p.category,sale_price:Number(markup(p.cost).toFixed(2)),image_url:imageUrl,active:true};
+  const res=await fetch(SUPABASE_URL+'/rest/v1/catalog_products',{method:'POST',headers:{apikey:SUPABASE_PUBLISHABLE_KEY,Authorization:'Bearer '+SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Prefer:'return=representation'},body:JSON.stringify(payload)});
+  if(!res.ok)throw new Error('Falha ao salvar produto: '+(await res.text()));
+  if(status)status.textContent='Publicado no catálogo!';
+  button.textContent='Publicado';button.disabled=true;
+ }catch(err){if(status)status.textContent='Erro: '+err.message;button.disabled=false;button.textContent='Tentar novamente'}
+}
 $('save').onclick=()=>{localStorage.setItem('dm-admin-draft',JSON.stringify({products,mode:$('profitMode').value,value:$('profitValue').value}));$('saveStatus').textContent='Rascunho salvo neste navegador.'};
 $('export').onclick=()=>{const lines=[['Modelo','Categoria','Custo','Preco sugerido'],...products.map(p=>[p.model,p.category,p.cost,markup(p.cost).toFixed(2)])];const csv='\uFEFF'+lines.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='rascunho-catalogo-dm.csv';a.click();URL.revokeObjectURL(a.href)};
 try{const d=JSON.parse(localStorage.getItem('dm-admin-draft'));if(d){products=d.products||[];$('profitMode').value=d.mode||'percent';$('profitValue').value=d.value||25}}catch{}render();
