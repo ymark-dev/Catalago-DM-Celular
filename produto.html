@@ -46,6 +46,11 @@ footer{background:#111;color:#aaa;padding:24px 0;font-size:11px}
  <div class="info">
   <p class="eyebrow" id="category"></p><h1 id="name"></h1>
   <div class="price" id="price"></div>
+  <div id="variantControls" hidden>
+   <div class="field-label">Cor</div><select class="choice" id="colorSelect" aria-label="Escolha a cor"></select>
+   <div class="field-label">Memória</div><select class="choice" id="storageSelect" aria-label="Escolha a memória"></select>
+  </div>
+  <p class="muted" id="variantSummary"></p>
   <p class="muted">Consulte cores, armazenamento e disponibilidade com nossa equipe.</p>
   <div class="rule"></div>
   <p class="muted">Produtos lacrados acompanham a garantia informada na oferta. Confirme as condições com a DM Celular antes de fechar seu pedido.</p>
@@ -67,30 +72,63 @@ footer{background:#111;color:#aaa;padding:24px 0;font-size:11px}
 const SUPABASE_URL='https://ybydwbhxxdenorlkkmfr.supabase.co';
 const SUPABASE_KEY='sb_publishable_t55geti4lBuRjWnqVa8tOw_P9VUKp49';
 const money=n=>Number(n||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
-const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let variants=[],selected=null;
+const $=id=>document.getElementById(id);
+function unique(field){return [...new Set(variants.map(v=>(v[field]||'').trim()).filter(Boolean))]}
+function fillSelect(el,values,current){el.innerHTML=values.map(v=>'<option value="'+v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'" '+(v===current?'selected':'')+'>'+v+'</option>').join('');}
+function availableFor(field,otherValue){
+ return [...new Set(variants.filter(v=>!otherValue||(v[field==='color'?'storage':'color']||'')===otherValue).map(v=>(v[field]||'').trim()).filter(Boolean))];
+}
+function updateVariant(){
+ const color=$('colorSelect').value,storage=$('storageSelect').value;
+ selected=variants.find(v=>(v.color||'')===color&&(v.storage||'')===storage)||variants.find(v=>(v.color||'')===color)||variants[0];
+ if(!selected)return;
+ const price=Number(selected.sale_price)>0?money(selected.sale_price):'Consulte o valor';
+ $('price').textContent=price;$('bottomPrice').textContent=price;
+ $('variantSummary').textContent=[selected.color,selected.storage].filter(Boolean).join(' • ');
+ const img=$('image');
+ if(selected.image_url){img.src=selected.image_url;img.alt=selected.model+' '+(selected.color||'')}else{img.removeAttribute('src');img.alt='Foto não cadastrada'}
+ const msg=encodeURIComponent('Olá! Tenho interesse no '+selected.model+(selected.storage?' • '+selected.storage:'')+(selected.color?' • '+selected.color:'')+'. Poderia confirmar preço e disponibilidade?');
+ const wa='https://wa.me/?text='+msg;
+ $('whatsapp').href=wa;$('bottomCta').href=wa;
+}
+function onColorChange(){
+ const colors=availableFor('color',$('storageSelect').value);
+ if(!colors.includes($('colorSelect').value))fillSelect($('colorSelect'),colors,colors[0]);
+ updateVariant();
+}
+function onStorageChange(){
+ const storages=availableFor('storage',$('colorSelect').value);
+ if(!storages.includes($('storageSelect').value))fillSelect($('storageSelect'),storages,storages[0]);
+ updateVariant();
+}
 async function load(){
- const id=new URLSearchParams(location.search).get('id');
- if(!id){document.getElementById('state').textContent='Produto não informado.';return}
+ const model=new URLSearchParams(location.search).get('model');
+ if(!model){$('state').textContent='Produto não informado.';return}
  try{
-  const r=await fetch(SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,sale_price,image_url&active=eq.true&id=eq.'+encodeURIComponent(id),{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
+  const url=SUPABASE_URL+'/rest/v1/catalog_products?select=id,model,category,storage,color,sale_price,image_url&active=eq.true&model=eq.'+encodeURIComponent(model)+'&order=created_at.asc';
+  const r=await fetch(url,{headers:{apikey:SUPABASE_KEY,Authorization:'Bearer '+SUPABASE_KEY}});
   if(!r.ok)throw new Error(await r.text());
-  const rows=await r.json(),p=rows[0];
-  if(!p){document.getElementById('state').textContent='Este aparelho não está disponível no catálogo.';return}
-  document.title=p.model+' | DM Celular';
-  document.getElementById('state').hidden=true;
-  document.getElementById('detail').hidden=false;
-  document.getElementById('category').textContent=p.category;
-  document.getElementById('name').textContent=p.model;
-  const price=Number(p.sale_price)>0?money(p.sale_price):'Consulte o valor';
-  document.getElementById('price').textContent=price;
-  document.getElementById('bottomPrice').textContent=price;
-  if(p.image_url){const im=document.getElementById('image');im.src=p.image_url;im.alt=p.model}else{document.querySelector('.photo').textContent='📱'}
-  const msg=encodeURIComponent('Olá! Tenho interesse no '+p.model+'. Poderia me informar preço, cores e disponibilidade?');
-  const wa='https://wa.me/?text='+msg;
-  document.getElementById('whatsapp').href=wa;
-  document.getElementById('bottomCta').href=wa;
-  document.getElementById('bottom').hidden=false;
- }catch(e){document.getElementById('state').textContent='Não foi possível carregar este produto. Tente novamente.';console.error(e)}
+  variants=await r.json();
+  if(!variants.length){$('state').textContent='Este aparelho não está disponível no catálogo.';return}
+  const first=variants[0];
+  document.title=first.model+' | DM Celular';
+  $('state').hidden=true;$('detail').hidden=false;
+  $('category').textContent=first.category||'Smartphone';
+  $('name').textContent=first.model;
+  const colors=unique('color'),storages=unique('storage');
+  if(colors.length||storages.length){
+   $('variantControls').hidden=false;
+   $('colorSelect').parentElement.style.display=colors.length?'block':'none';
+   $('storageSelect').parentElement.style.display=storages.length?'block':'none';
+   if(colors.length)fillSelect($('colorSelect'),colors,first.color||colors[0]);
+   if(storages.length)fillSelect($('storageSelect'),storages,first.storage||storages[0]);
+   $('colorSelect').addEventListener('change',onColorChange);
+   $('storageSelect').addEventListener('change',onStorageChange);
+  }
+  updateVariant();
+  $('bottom').hidden=false;
+ }catch(e){$('state').textContent='Não foi possível carregar as opções. Verifique se as colunas de cor e memória foram criadas no Supabase.';console.error(e)}
 }
 load();
 </script>
